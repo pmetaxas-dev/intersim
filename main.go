@@ -109,7 +109,7 @@ func loadQuestions() {
 
 // Ξεκινάει μια νέα συνέντευξη επιλέγοντας τυχαίες ερωτήσεις
 func startInterviewHandler(w http.ResponseWriter, r *http.Request) {
-	count := 2 // Ή 10 ανάλογα με την επιλογή του χρήστη
+	count := 5 // Ή 10 ανάλογα με την επιλογή του χρήστη
 
 	// Ανακάτεμα και επιλογή ερωτήσεων
 	rSource := rand.New(rand.NewSource(time.Now().UnixNano()))

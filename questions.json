@@ -8,5 +8,245 @@
     "id": 2,
     "category": "Technical - Go",
     "question": "Explain how channels work in Go and what happens when you write to a closed channel."
+  },
+  {
+    "id": 3,
+    "category": "Technical - Go",
+    "question": "What is a goroutine in Go, and how does it differ from a traditional OS thread?"
+  },
+  {
+    "id": 4,
+    "category": "Technical - Go",
+    "question": "How do you handle errors in Go? Why doesn't Go use traditional try-catch blocks?"
+  },
+  {
+    "id": 5,
+    "category": "Technical - Go",
+    "question": "What is the difference between buffered and unbuffered channels in Go?"
+  },
+  {
+    "id": 6,
+    "category": "Technical - Go",
+    "question": "Explain how the 'defer' statement works in Go and give a practical use case."
+  },
+  {
+    "id": 7,
+    "category": "Technical - Go",
+    "question": "What is a struct in Go, and how do you implement a method on a struct?"
+  },
+  {
+    "id": 8,
+    "category": "Technical - Go",
+    "question": "How do slices work under the hood in Go? What happens when a slice triggers an append beyond its capacity?"
+  },
+  {
+    "id": 9,
+    "category": "Technical - Go",
+    "question": "What is the purpose of the 'select' statement in Go concurrency?"
+  },
+  {
+    "id": 10,
+    "category": "Technical - Go",
+    "question": "Explain the difference between passing a variable by value vs. passing by pointer in Go."
+  },
+  {
+    "id": 11,
+    "category": "Technical - Go",
+    "question": "What is an Interface in Go? How does implicit interface satisfaction work, and how does it differ from explicit implementation in other languages?"
+  },
+  {
+    "id": 12,
+    "category": "Technical - Go",
+    "question": "Explain the concept of 'context' in Go. Why is it standard practice to pass a 'ctx context.Context' as the first argument in backend functions?"
+  },
+  {
+    "id": 13,
+    "category": "Technical - Go",
+    "question": "How does Garbage Collection work in Go, and how does Go's escape analysis decide whether a variable goes to the Stack or the Heap?"
+  },
+  {
+    "id": 14,
+    "category": "Technical - Go",
+    "question": "What is Dependency Injection (DI) in Go? How do you typically structure your project to inject database clients or services without a heavy framework?"
+  },
+  {
+    "id": 15,
+    "category": "Technical - Go",
+    "question": "What are 'init()' functions in Go? When are they executed, and what is a common use case (or anti-pattern) for using them?"
+  },
+  {
+    "id": 16,
+    "category": "Technical - Go",
+    "question": "Explain how a 'sync.WaitGroup' works and how you can use it to block execution until multiple goroutines finish."
+  },
+  {
+    "id": 17,
+    "category": "Technical - Go",
+    "question": "What is the difference between 'sync.Mutex' and 'sync.RWMutex' in Go? When should you prefer one over the other?"
+  },
+  {
+    "id": 18,
+    "category": "Technical - Databases",
+    "question": "What is the difference between a Relational Database (SQL) and a Non-Relational Database (NoSQL)?"
+  },
+  {
+    "id": 19,
+    "category": "Technical - Databases",
+    "question": "What are Database Indexes? How do they speed up read operations, and what is their impact on write operations?"
+  },
+  {
+    "id": 20,
+    "category": "Technical - Databases",
+    "question": "Explain the difference between an INNER JOIN, a LEFT JOIN, and a RIGHT JOIN in SQL."
+  },
+  {
+    "id": 21,
+    "category": "Technical - Databases",
+    "question": "What are ACID properties in a database transaction? Can you explain each one briefly?"
+  },
+  {
+    "id": 22,
+    "category": "Technical - Databases",
+    "question": "What is database normalization, and why do we design tables up to the Third Normal Form (3NF)?"
+  },
+  {
+    "id": 23,
+    "category": "Technical - Databases",
+    "question": "What is a Foreign Key constraint, and what happens during a cascade delete operation?"
+  },
+  {
+    "id": 24,
+    "category": "Technical - Architecture / APIs",
+    "question": "What are the main HTTP methods used in a RESTful API, and what are their typical use cases?"
+  },
+  {
+    "id": 25,
+    "category": "Technical - Architecture / APIs",
+    "question": "What is the meaning of the HTTP status codes 200, 201, 400, 401, 403, 404, and 500?"
+  },
+  {
+    "id": 26,
+    "category": "Technical - Architecture / APIs",
+    "question": "What is the difference between Authentication and Authorization in web applications?"
+  },
+  {
+    "id": 27,
+    "category": "Technical - Architecture / APIs",
+    "question": "How does JWT (JSON Web Token) authentication work, and how does a backend verify a token securely?"
+  },
+  {
+    "id": 28,
+    "category": "Technical - Architecture / APIs",
+    "question": "What is the purpose of middleware in a backend web server framework?"
+  },
+  {
+    "id": 29,
+    "category": "Technical - Architecture / APIs",
+    "question": "What is CORS (Cross-Origin Resource Sharing), and why does the browser block requests to different domains?"
+  },
+  {
+    "id": 30,
+    "category": "Technical - Architecture / APIs",
+    "question": "Explain the difference between monolithic architecture and microservices architecture."
+  },
+  {
+    "id": 31,
+    "category": "Technical - DevOps / Tools",
+    "question": "What is Git, and what is the difference between 'git merge' and 'git rebase'?"
+  },
+  {
+    "id": 32,
+    "category": "Technical - DevOps / Tools",
+    "question": "What is a Docker container, and how does it differ from a standard Virtual Machine?"
+  },
+  {
+    "id": 33,
+    "category": "Technical - DevOps / Tools",
+    "question": "What is the purpose of a Dockerfile, and what do the commands FROM, RUN, and EXPOSE do?"
+  },
+  {
+    "id": 34,
+    "category": "Technical - DevOps / Tools",
+    "question": "How do you search for a specific text pattern inside a log file using the Linux command line?"
+  },
+  {
+    "id": 35,
+    "category": "Technical - DevOps / Tools",
+    "question": "What is a CI/CD pipeline, and why is it useful in modern software development workflows?"
+  },
+  {
+    "id": 36,
+    "category": "Technical - Core CS",
+    "question": "What is Object-Oriented Programming (OOP), and what are its four core principles?"
+  },
+  {
+    "id": 37,
+    "category": "Technical - Core CS",
+    "question": "What is Big O notation? Can you compare the time complexities of O(1), O(N), and O(N^2)?"
+  },
+  {
+    "id": 38,
+    "category": "Technical - Core CS",
+    "question": "What is the difference between synchronous execution and asynchronous execution?"
+  },
+  {
+    "id": 39,
+    "category": "Technical - Core CS",
+    "question": "What is a memory leak, and how can it occur in a backend environment?"
+  },
+  {
+    "id": 40,
+    "category": "Technical - Core CS",
+    "question": "What are the SOLID principles? Pick one and explain how it helps write cleaner code."
+  },
+  {
+    "id": 41,
+    "category": "Behavioral",
+    "question": "Why do you want to work as a Junior Back-end Developer, and what motivated you to learn backend programming?"
+  },
+  {
+    "id": 42,
+    "category": "Behavioral",
+    "question": "Describe a difficult technical bug you encountered in a project and the steps you took to debug and solve it."
+  },
+  {
+    "id": 43,
+    "category": "Behavioral",
+    "question": "How do you handle constructive criticism or code review feedback that asks you to rewrite a large part of your code?"
+  },
+  {
+    "id": 44,
+    "category": "Behavioral",
+    "question": "Tell me about a time you had to work closely with someone whose personality or working style was very different from yours."
+  },
+  {
+    "id": 45,
+    "category": "Behavioral",
+    "question": "What do you do when you are assigned a task using a technology or framework that you have never used before?"
+  },
+  {
+    "id": 46,
+    "category": "Behavioral",
+    "question": "Imagine you push code to production and it immediately crashes the system. What are your first steps to handle the situation?"
+  },
+  {
+    "id": 47,
+    "category": "Behavioral",
+    "question": "How do you prioritize your tasks when you have multiple assignments with similar priority levels?"
+  },
+  {
+    "id": 48,
+    "category": "Behavioral",
+    "question": "Tell me about a project you are most proud of. What role did you play, and what did you learn from it?"
+  },
+  {
+    "id": 49,
+    "category": "Behavioral",
+    "question": "Where do you see your technical skills expanding over the next two years? What areas do you want to master next?"
+  },
+  {
+    "id": 50,
+    "category": "Behavioral",
+    "question": "Why is writing clear documentation or commenting code important, especially when working within a dev team?"
   }
 ]
