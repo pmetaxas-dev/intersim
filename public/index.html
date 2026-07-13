@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Interview Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Side: Interactive Feed / Chat -->
+        <div class="sidebar-chat">
+            <h2>Interview Feed</h2>
+            <div id="chat-log" class="chat-log">
+                <div class="system-msg">Click "Start Interview" to begin your evaluation.</div>
+            </div>
+        </div>
+
+        <!-- Right Side: Interactive App Workspace (Canvas-Style) -->
+        <div class="main-canvas">
+            <div id="setup-screen" class="canvas-card">
+                <h1>Job Interview Simulator</h1>
+                <p>Test your skills with AI-driven technical and behavioral scenarios.</p>
+                <button onclick="startInterview()">Start Interview</button>
+            </div>
+
+            <div id="question-screen" class="canvas-card hidden">
+                <div class="card-header">
+                    <span id="question-category" class="badge">Category</span>
+                </div>
+                <h2 id="question-text">Question loading...</h2>
+                <textarea id="user-answer" placeholder="Type your structured answer here..."></textarea>
+                <button onclick="submitAnswer()">Submit Response</button>
+            </div>
+
+            <div id="report-screen" class="canvas-card hidden">
+                <h1>Final Performance Report</h1>
+                <div class="score-radial">
+                    <span id="final-score">0%</span>
+                </div>
+                <h3>Key Weaknesses</h3>
+                <ul id="weaknesses-list"></ul>
+                <h3>Recommended Study Plan</h3>
+                <ul id="suggestions-list"></ul>
+                <button onclick="location.reload()">Try Again</button>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

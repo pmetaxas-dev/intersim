@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "category": "Behavioral",
+    "question": "Tell me about a time you faced a tight deadline and how you managed it."
+  },
+  {
+    "id": 2,
+    "category": "Technical - Go",
+    "question": "Explain how channels work in Go and what happens when you write to a closed channel."
+  }
+]
