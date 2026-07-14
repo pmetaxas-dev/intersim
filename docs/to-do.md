@@ -1,11 +1,14 @@
-# Things to do in the next update (0.8)
+# Version 0.8
 
--   1. Create PRD.md
--   2. After Follow-up question the next question must be from the pool (.json). **DONE**
--   3. At the starting page the program should ask for the API Key:
-        "Please paste a working API Key. (Use groq.com for a free API Key)
--   4. Populate README.md file.
+- [x] Create `PRD.md`. **DONE**
+- [x] Return to the JSON question pool after each follow-up. **DONE**
+- [x] Ask for a Groq API key on the setup page when no environment fallback is
+  configured; keep submitted keys in memory only. **DONE**
+- [x] Populate `README.md`. **DONE**
+- [x] Add automated tests under `/tests`. **DONE**
 
-## Later Update (1.0)
+## Later update (1.0)
 
--   1. At the starting page a button should open a file requester for the user to provide a .json file.
+- [ ] Add a browser file requester for a validated custom `.json` question pool.
+- [ ] Replace the single global interview with isolated per-user sessions before
+  supporting simultaneous users.

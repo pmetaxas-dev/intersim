@@ -1,0 +1,14 @@
+Date: 2026-07-14
+Time: 22:50:47 +03:00
+My Prompt: Complete the version 0.8 to-do items, create tests first, add secure
+API-key preflight with environment fallback, keep version 0.8 single-user, and
+record per-user state isolation for version 1.0.
+Agent Action: Added backend and API tests under /tests; extracted the application
+into internal/app; added validated question loading, controlled state transitions,
+mockable Groq integration, and JSON error handling; added browser API-key preflight
+and safe text rendering; created PRD.md, expanded README.md, documented architecture
+and tasks, and marked the approved version 0.8 work complete. Verification results
+were: gofmt completed; go test ./..., go vet ./..., go build ./..., JavaScript
+syntax validation, and git diff --check passed; backend statement coverage was
+88.7%. Race detection could not run because CGO is disabled and no C compiler is
+installed in the environment.
