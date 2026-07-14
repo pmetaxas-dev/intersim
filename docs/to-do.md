@@ -4,6 +4,7 @@
 -   2. After Follow-up question the next question must be from the pool (.json).
 -   3. At the starting page the program should ask for the API Key:
         "Please paste a working API Key. (Use groq.com for a free API Key)
+-   4. Populate README.md file.
 
 ## Later Update (1.0)
 
