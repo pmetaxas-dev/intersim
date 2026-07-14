@@ -24,8 +24,17 @@ async function startInterview() {
 }
 
 function displayQuestion(question) {
+    if (!question) return;
+    
     currentQuestionId = question.id;
-    document.getElementById('question-category').innerText = question.category;
+    
+    // Αν η κατηγορία είναι "Follow-up", πρόσθεσε μια ένδειξη
+    let displayCategory = question.category;
+    if (question.category === "Follow-up") {
+        displayCategory = "🔍 Follow-up Question";
+    }
+    
+    document.getElementById('question-category').innerText = displayCategory;
     document.getElementById('question-text').innerText = question.question;
     document.getElementById('user-answer').value = '';
 }
@@ -34,7 +43,6 @@ async function submitAnswer() {
     const answer = document.getElementById('user-answer').value;
     if (!answer.trim()) return alert("Please type an answer first.");
 
-    // UI Loading state
     const chatLog = document.getElementById('chat-log');
     
     const response = await fetch('/api/answer', {
@@ -43,24 +51,26 @@ async function submitAnswer() {
         body: JSON.stringify({ questionId: currentQuestionId, answer: answer })
     });
     
-    const data = await response.json();
+   const data = await response.json();
     
-    // 1 & 2 & 3) Rendering AI Feedback on the Left Sidebar
     const evalBlock = document.createElement('div');
     evalBlock.className = 'feedback-block';
+    
+    // Αφαιρέσαμε το followUpHtml από εδώ για να μην φαίνεται στα αριστερά
     evalBlock.innerHTML = `
         <p><span class="score-tag">Score: ${data.evaluation.score}/100</span></p>
         <p><strong>✓ Pros:</strong> ${data.evaluation.feedbackGood}</p>
         <p><strong>✗ Cons:</strong> ${data.evaluation.feedbackBad}</p>
-        <p style="color: #60a5fa;"><strong>Follow-up:</strong> ${data.evaluation.followUpQuestion}</p>
     `;
+    
     chatLog.appendChild(evalBlock);
     chatLog.scrollTop = chatLog.scrollHeight;
 
     if (data.isFinished) {
         showFinalReport();
     } else {
-        displayQuestion(data.nextQuestion);
+        // ΕΔΩ ΗΤΑΝ ΤΟ ΛΑΘΟΣ: Πρέπει να στείλεις το αντικείμενο που ήρθε από το API
+        displayQuestion(data.nextQuestion); 
     }
 }
 
@@ -68,13 +78,25 @@ async function showFinalReport() {
     document.getElementById('question-screen').classList.add('hidden');
     document.getElementById('report-screen').classList.remove('hidden');
 
-    const response = await fetch('/api/report');
-    const report = await response.json();
+    try {
+        const response = await fetch('/api/report');
+        const report = await response.json();
 
-    // 4 & 5) Display weaknesses and suggestions
-    const weaknessesUl = document.getElementById('weaknesses-list');
-    weaknessesUl.innerHTML = report.weaknesses.map(w => `<li>${w}</li>`).join('');
+        // Ενημέρωση του Score (αυτό έλειπε)
+        const scoreEl = document.getElementById('final-score');
+        if (scoreEl) {
+            scoreEl.innerText = `${report.finalScore}%`;
+        }
 
-    const suggestionsUl = document.getElementById('suggestions-list');
-    suggestionsUl.innerHTML = report.studySuggestions.map(s => `<li>${s}</li>`).join('');
-}S
+        // Ενημέρωση Weaknesses
+        const weaknessesUl = document.getElementById('weaknesses-list');
+        weaknessesUl.innerHTML = report.weaknesses.map(w => `<li>${w}</li>`).join('');
+
+        // Ενημέρωση Suggestions
+        const suggestionsUl = document.getElementById('suggestions-list');
+        suggestionsUl.innerHTML = report.studySuggestions.map(s => `<li>${s}</li>`).join('');
+        
+    } catch (err) {
+        console.error("Error loading report:", err);
+    }
+}

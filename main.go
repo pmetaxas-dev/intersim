@@ -2,10 +2,8 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,7 +11,6 @@ import (
 	"time"
 )
 
-// Δομές Δεδομένων
 type Question struct {
 	ID       int    `json:"id"`
 	Category string `json:"category"`
@@ -32,273 +29,183 @@ type AIResponse struct {
 	FollowUpQuestion string `json:"followUpQuestion"`
 }
 
-type InterviewState struct {
-	TotalQuestions int
-	CurrentIndex   int
-	Questions      []Question
-	History        []string // Κρατάει το ιστορικό για το τελικό report
-	TotalScore     int
+type FinalReport struct {
+	Weaknesses       []string `json:"weaknesses"`
+	StudySuggestions []string `json:"studySuggestions"`
+	FinalScore       int      `json:"finalScore"`
 }
 
-// Δομές για το Groq API (OpenAI Compatible Format)
+type InterviewState struct {
+	CurrentIndex     int
+	Questions        []Question
+	History          []string
+	IsFollowUpActive bool
+	LastFollowUpQ    string
+}
+
 type GroqMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
-}
-
-type GroqResponseFormat struct {
-	Type string `json:"type"`
 }
 
 type GroqRequest struct {
 	Model          string              `json:"model"`
 	Messages       []GroqMessage       `json:"messages"`
 	Temperature    float64             `json:"temperature"`
-	ResponseFormat *GroqResponseFormat `json:"response_format,omitempty"`
+	ResponseFormat *GroqResponseFormat `json:"response_format"`
 }
 
-type GroqChoice struct {
-	Message GroqMessage `json:"message"`
+type GroqResponseFormat struct {
+	Type string `json:"type"`
 }
 
 type GroqChatResponse struct {
-	Choices []GroqChoice `json:"choices"`
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
 }
 
 var (
 	questionPool []Question
 	state        *InterviewState
-	groqAPIKey   string
-)
-
-const (
-	groqAPIURL = "https://api.groq.com/openai/v1/chat/completions"
-	groqModel  = "llama-3.3-70b-versatile" // Το κορυφαίο, γρήγορο μοντέλο της Groq
+	groqAPIKey   = os.Getenv("GROQ_API_KEY")
 )
 
 func main() {
-	// Αρχικοποίηση Groq API Key
-	groqAPIKey = os.Getenv("GROQ_API_KEY")
-	if groqAPIKey == "" {
-		// Αν δεν έχει οριστεί στα env, εμφάνισε λάθος
-		log.Fatal("Missing GROQ_API_KEY Environment Variable!")
-	}
-
-	// Φόρτωση ερωτήσεων από το JSON
 	loadQuestions()
-
-	// Handlers για το API και το Front-end
 	http.Handle("/", http.FileServer(http.Dir("./public")))
 	http.HandleFunc("/api/start", startInterviewHandler)
 	http.HandleFunc("/api/answer", answerHandler)
 	http.HandleFunc("/api/report", generateReportHandler)
-
-	fmt.Println("Server running on http://localhost:8080")
+	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func loadQuestions() {
-	file, err := os.ReadFile("questions.json")
-	if err != nil {
-		log.Fatalf("Error reading questions file: %v", err)
-	}
-	if err := json.Unmarshal(file, &questionPool); err != nil {
-		log.Fatalf("Error parsing JSON: %v", err)
-	}
+	file, _ := os.ReadFile("questions.json")
+	json.Unmarshal(file, &questionPool)
 }
 
-// Ξεκινάει μια νέα συνέντευξη επιλέγοντας τυχαίες ερωτήσεις
 func startInterviewHandler(w http.ResponseWriter, r *http.Request) {
-	count := 5 // Ή 10 ανάλογα με την επιλογή του χρήστη
-
-	// Ανακάτεμα και επιλογή ερωτήσεων
-	rSource := rand.New(rand.NewSource(time.Now().UnixNano()))
-	perm := rSource.Perm(len(questionPool))
-
-	selected := make([]Question, count)
-	for i := 0; i < count; i++ {
-		selected[i] = questionPool[perm[i]]
-	}
-
-	state = &InterviewState{
-		TotalQuestions: count,
-		CurrentIndex:   0,
-		Questions:      selected,
-		History:        []string{},
-		TotalScore:     0,
-	}
-
+	perm := rand.New(rand.NewSource(time.Now().UnixNano())).Perm(len(questionPool))
+	selected := []Question{questionPool[perm[0]], questionPool[perm[1]], questionPool[perm[2]], questionPool[perm[3]], questionPool[perm[4]]}
+	state = &InterviewState{CurrentIndex: 0, Questions: selected, History: []string{}, IsFollowUpActive: false}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(state.Questions[0])
 }
 
-// Διαχειρίζεται την απάντηση και καλεί το Groq API
 func answerHandler(w http.ResponseWriter, r *http.Request) {
-	if state == nil || state.CurrentIndex >= state.TotalQuestions {
-		log.Println("[WARN] Attempted to submit answer with no active session or session completed.")
-		http.Error(w, "No active interview session", http.StatusBadRequest)
-		return
-	}
-
 	var payload AnswerPayload
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		log.Printf("[ERROR] Failed to decode request body: %v", err)
-		http.Error(w, fmt.Sprintf("Invalid request payload: %v", err), http.StatusBadRequest)
-		return
+	json.NewDecoder(r.Body).Decode(&payload)
+
+	qText := state.Questions[state.CurrentIndex].Question
+	if state.IsFollowUpActive {
+		qText = state.LastFollowUpQ
 	}
 
-	currentQ := state.Questions[state.CurrentIndex]
+	systemPrompt := `You are an expert technical interviewer evaluating a Junior Developer.
+    1. Score the answer on a scale of 0-100. Be fair: a correct, professional, and accurate technical answer should receive 90-100. 
+    2. Only deduct points for actual misinformation or critical omissions. Do not penalize for "style" or "length" unless it is completely irrelevant.
+    3. IF this is a main question, generate ONE specific, technical follow-up. IF follow-up, set "followUpQuestion" to "".
+    4. Return ONLY valid JSON: {"score": int, "feedbackGood": "str", "feedbackBad": "str", "followUpQuestion": "str"}`
 
-	// Σχεδιασμός του Prompt με Structure Output (JSON)
-	systemPrompt := `You are an expert tech interviewer. Evaluate the candidate's answer based on the question provided.
-You MUST respond with a valid, raw JSON object. Do not include any markdown styling, explanation, or wrap it in triple backticks.
-The JSON must have this exact structure:
-{
-    "score": (integer from 1 to 100),
-    "feedbackGood": "What they did well in 1-2 sentences",
-    "feedbackBad": "What they missed or could improve in 1-2 sentences",
-    "followUpQuestion": "A natural follow-up question strictly based on their answer to deep dive into their knowledge"
-}`
-
-	userPrompt := fmt.Sprintf("Question: \"%s\"\nCandidate Answer: \"%s\"", currentQ.Question, payload.Answer)
-
-	log.Printf("[INFO] Sending question evaluation to Groq for index %d...", state.CurrentIndex)
-
-	// Προετοιμασία Groq API Request
-	groqReqBody := GroqRequest{
-		Model: groqModel,
+	reqBody := GroqRequest{
+		Model: "llama-3.3-70b-versatile",
 		Messages: []GroqMessage{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: fmt.Sprintf("Context: %s. Question: %s, Answer: %s",
+				map[bool]string{true: "Follow-up", false: "Main"}[state.IsFollowUpActive], qText, payload.Answer)},
 		},
-		Temperature:    0.2,
+		Temperature:    0.1,
 		ResponseFormat: &GroqResponseFormat{Type: "json_object"},
 	}
 
-	responseText, err := callGroqAPI(groqReqBody)
+	data, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest("POST", "https://api.groq.com/openai/v1/chat/completions", bytes.NewBuffer(data))
+	req.Header.Set("Authorization", "Bearer "+groqAPIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+
 	if err != nil {
-		log.Printf("[ERROR] Groq API call failed: %v", err)
-		http.Error(w, fmt.Sprintf("AI evaluation failed: %v", err), http.StatusInternalServerError)
+		log.Println("Error calling Groq:", err)
+		http.Error(w, "AI Service Error", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("[DEBUG] Raw Groq response text: %s", responseText)
+	// Τώρα το defer είναι ασφαλές
+	defer resp.Body.Close()
 
+	var groqResp GroqChatResponse
+	json.NewDecoder(resp.Body).Decode(&groqResp)
 	var aiResult AIResponse
-	if err := json.Unmarshal([]byte(responseText), &aiResult); err != nil {
-		log.Printf("[ERROR] Failed to parse Groq response JSON: %v. Raw body was: %s", err, responseText)
-		http.Error(w, fmt.Sprintf("Failed to parse AI response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	json.Unmarshal([]byte(groqResp.Choices[0].Message.Content), &aiResult)
 
-	// Αποθήκευση στο ιστορικό για το τελικό report
-	state.TotalScore += aiResult.Score
-	state.History = append(state.History, fmt.Sprintf("Q: %s\nA: %s\nScore: %d\n", currentQ.Question, payload.Answer, aiResult.Score))
+	// Αποθήκευση ουσιαστικού feedback στο history
+	feedbackSummary := fmt.Sprintf("Q: %s, Score: %d, Pros: %s, Cons: %s", qText, aiResult.Score, aiResult.FeedbackGood, aiResult.FeedbackBad)
+	state.History = append(state.History, feedbackSummary)
 
-	state.CurrentIndex++
-
-	// Προετοιμασία της επόμενης ερώτησης (αν υπάρχει)
+	isFinished := len(state.History) >= 10
 	var nextQ *Question
-	if state.CurrentIndex < state.TotalQuestions {
-		nextQ = &state.Questions[state.CurrentIndex]
+	if !isFinished {
+		if !state.IsFollowUpActive {
+			state.IsFollowUpActive = true
+			state.LastFollowUpQ = aiResult.FollowUpQuestion
+			nextQ = &Question{ID: 999, Category: "Follow-up", Question: aiResult.FollowUpQuestion}
+		} else {
+			state.IsFollowUpActive = false
+			state.CurrentIndex++
+			if state.CurrentIndex < len(state.Questions) {
+				nextQ = &state.Questions[state.CurrentIndex]
+			} else {
+				isFinished = true
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{
-		"evaluation":   aiResult,
-		"nextQuestion": nextQ,
-		"isFinished":   nextQ == nil,
-	}); err != nil {
-		log.Printf("[ERROR] Failed to encode response: %v", err)
-	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"evaluation": aiResult, "nextQuestion": nextQ, "isFinished": isFinished})
 }
 
-// Δημιουργεί το τελικό Report μέσω Groq
 func generateReportHandler(w http.ResponseWriter, r *http.Request) {
-	if state == nil {
-		http.Error(w, "No session data found", http.StatusBadRequest)
-		return
-	}
-
-	avgScore := state.TotalScore / state.TotalQuestions
-
-	historyText := ""
+	reportContext := ""
 	for _, h := range state.History {
-		historyText += h + "\n---\n"
+		reportContext += h + "\n"
 	}
 
-	systemPrompt := `Analyze this complete job interview history and compile a final feedback report.
-You MUST respond with a valid, raw JSON object. Do not include any markdown styling, explanation, or wrap it in triple backticks.
-The JSON must have this exact structure:
-{
-    "weaknesses": ["list", "of", "core", "weaknesses", "identified"],
-    "studySuggestions": ["concrete", "topics", "or", "areas", "to", "study", "for", "improvement"]
-}`
-
-	userPrompt := fmt.Sprintf("The candidate achieved an average score of %d/100.\n\nInterview History:\n%s", avgScore, historyText)
-
-	log.Printf("[INFO] Sending history analysis to Groq for final report...")
-
-	groqReqBody := GroqRequest{
-		Model: groqModel,
+	systemPrompt := `Analyze the interview feedback history and generate JSON: {"weaknesses": ["str"], "studySuggestions": ["str"], "finalScore": int}`
+	reqBody := GroqRequest{
+		Model: "llama-3.3-70b-versatile",
 		Messages: []GroqMessage{
 			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: reportContext},
 		},
 		Temperature:    0.3,
 		ResponseFormat: &GroqResponseFormat{Type: "json_object"},
 	}
 
-	responseText, err := callGroqAPI(groqReqBody)
+	data, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest("POST", "https://api.groq.com/openai/v1/chat/completions", bytes.NewBuffer(data))
+	req.Header.Set("Authorization", "Bearer "+groqAPIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	// ΑΛΛΑΞΕ ΤΟ: resp, _ := http.DefaultClient.Do(req)
+	// ΣΕ ΑΥΤΟ (για να πιάνεις το err):
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("[ERROR] Groq API call failed: %v", err)
-		http.Error(w, "Failed to generate final report", http.StatusInternalServerError)
+		log.Println("Error calling Groq API:", err)
+		http.Error(w, "AI Service Unavailable", http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(responseText))
-}
-
-// Helper συνάρτηση για την εκτέλεση HTTP Request στο API της Groq
-func callGroqAPI(reqBody GroqRequest) (string, error) {
-	jsonData, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(context.Background(), "POST", groqAPIURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create http request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+groqAPIKey)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("http request call failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("groq API returned status %s: %s", resp.Status, string(respBody))
-	}
+	defer resp.Body.Close() // Τώρα είναι ασφαλές γιατί ξέρουμε ότι resp != nil
 
 	var groqResp GroqChatResponse
-	if err := json.Unmarshal(respBody, &groqResp); err != nil {
-		return "", fmt.Errorf("failed to unmarshal groq response: %w", err)
-	}
+	json.NewDecoder(resp.Body).Decode(&groqResp)
+	var report FinalReport
+	json.Unmarshal([]byte(groqResp.Choices[0].Message.Content), &report)
 
-	if len(groqResp.Choices) == 0 {
-		return "", fmt.Errorf("received empty choices from Groq")
-	}
-
-	return groqResp.Choices[0].Message.Content, nil
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(report)
 }
