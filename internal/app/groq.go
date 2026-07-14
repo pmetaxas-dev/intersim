@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,40 @@ import (
 )
 
 const maxGroqResponseBytes = 1 << 20
+
+const structuredResponseAttempts = 2
+
+type groqHTTPError struct {
+	statusCode int
+}
+
+func (e *groqHTTPError) Error() string {
+	return fmt.Sprintf("Groq returned HTTP %d", e.statusCode)
+}
+
+type groqTransportError struct {
+	cause error
+}
+
+func (e *groqTransportError) Error() string {
+	return fmt.Sprintf("call Groq: %v", e.cause)
+}
+
+func (e *groqTransportError) Unwrap() error {
+	return e.cause
+}
+
+type malformedGroqResponseError struct {
+	cause error
+}
+
+func (e *malformedGroqResponseError) Error() string {
+	return fmt.Sprintf("malformed Groq response: %v", e.cause)
+}
+
+func (e *malformedGroqResponseError) Unwrap() error {
+	return e.cause
+}
 
 func (a *App) evaluateAnswer(ctx context.Context, apiKey, contextLabel, question, answer string) (AIResponse, error) {
 	const systemPrompt = `You are an expert technical interviewer evaluating a Junior Developer.
@@ -20,11 +55,28 @@ func (a *App) evaluateAnswer(ctx context.Context, apiKey, contextLabel, question
 4. Return only JSON: {"score":int,"feedbackGood":"str","feedbackBad":"str","followUpQuestion":"str"}`
 	userPrompt := fmt.Sprintf("Context: %s. Question: %s, Answer: %s", contextLabel, question, answer)
 
-	content, err := a.complete(ctx, apiKey, systemPrompt, userPrompt, 0.1)
-	if err != nil {
-		return AIResponse{}, err
-	}
+	var lastErr error
+	for attempt := 0; attempt < structuredResponseAttempts; attempt++ {
+		content, err := a.complete(ctx, apiKey, systemPrompt, userPrompt, 0.1)
+		if err != nil {
+			var malformed *malformedGroqResponseError
+			if errors.As(err, &malformed) {
+				lastErr = err
+				continue
+			}
+			return AIResponse{}, err
+		}
 
+		result, err := parseEvaluation(content, contextLabel)
+		if err == nil {
+			return result, nil
+		}
+		lastErr = err
+	}
+	return AIResponse{}, fmt.Errorf("evaluation invalid after %d attempts: %w", structuredResponseAttempts, lastErr)
+}
+
+func parseEvaluation(content, contextLabel string) (AIResponse, error) {
 	var result AIResponse
 	if err := json.Unmarshal([]byte(content), &result); err != nil {
 		return AIResponse{}, fmt.Errorf("decode evaluation: %w", err)
@@ -32,10 +84,16 @@ func (a *App) evaluateAnswer(ctx context.Context, apiKey, contextLabel, question
 	if result.Score < 0 || result.Score > 100 {
 		return AIResponse{}, fmt.Errorf("evaluation score %d is outside 0-100", result.Score)
 	}
-	if strings.TrimSpace(result.FeedbackGood) == "" || strings.TrimSpace(result.FeedbackBad) == "" {
-		return AIResponse{}, fmt.Errorf("evaluation feedback is incomplete")
+	result.FeedbackGood = strings.TrimSpace(result.FeedbackGood)
+	if result.FeedbackGood == "" {
+		result.FeedbackGood = "No specific strengths were identified."
 	}
-	if contextLabel == "Main" && strings.TrimSpace(result.FollowUpQuestion) == "" {
+	result.FeedbackBad = strings.TrimSpace(result.FeedbackBad)
+	if result.FeedbackBad == "" {
+		result.FeedbackBad = "No significant issues were identified."
+	}
+	result.FollowUpQuestion = strings.TrimSpace(result.FollowUpQuestion)
+	if contextLabel == "Main" && result.FollowUpQuestion == "" {
 		return AIResponse{}, fmt.Errorf("evaluation follow-up question is empty")
 	}
 	return result, nil
@@ -46,12 +104,29 @@ func (a *App) generateReport(ctx context.Context, apiKey string, history []inter
 	if err != nil {
 		return FinalReport{}, fmt.Errorf("encode interview history: %w", err)
 	}
-	content, err := a.complete(ctx, apiKey, "Generate interview report JSON.",
-		`Analyze the interview history and return only JSON: {"weaknesses":["str"],"studySuggestions":["str"],"finalScore":int}. History: `+string(data), 0.3)
-	if err != nil {
-		return FinalReport{}, err
-	}
+	userPrompt := `Analyze the interview history and return only JSON: {"weaknesses":["str"],"studySuggestions":["str"],"finalScore":int}. History: ` + string(data)
+	var lastErr error
+	for attempt := 0; attempt < structuredResponseAttempts; attempt++ {
+		content, err := a.complete(ctx, apiKey, "Generate interview report JSON.", userPrompt, 0.3)
+		if err != nil {
+			var malformed *malformedGroqResponseError
+			if errors.As(err, &malformed) {
+				lastErr = err
+				continue
+			}
+			return FinalReport{}, err
+		}
 
+		report, err := parseReport(content)
+		if err == nil {
+			return report, nil
+		}
+		lastErr = err
+	}
+	return FinalReport{}, fmt.Errorf("report invalid after %d attempts: %w", structuredResponseAttempts, lastErr)
+}
+
+func parseReport(content string) (FinalReport, error) {
 	var report FinalReport
 	if err := json.Unmarshal([]byte(content), &report); err != nil {
 		return FinalReport{}, fmt.Errorf("decode report: %w", err)
@@ -88,21 +163,21 @@ func (a *App) complete(ctx context.Context, apiKey, systemPrompt, userPrompt str
 
 	response, err := a.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("call Groq: %w", err)
+		return "", &groqTransportError{cause: err}
 	}
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		io.Copy(io.Discard, io.LimitReader(response.Body, maxGroqResponseBytes))
-		return "", fmt.Errorf("Groq returned HTTP %d", response.StatusCode)
+		return "", &groqHTTPError{statusCode: response.StatusCode}
 	}
 
 	var payload groqChatResponse
 	decoder := json.NewDecoder(io.LimitReader(response.Body, maxGroqResponseBytes))
 	if err := decoder.Decode(&payload); err != nil {
-		return "", fmt.Errorf("decode Groq response: %w", err)
+		return "", &malformedGroqResponseError{cause: fmt.Errorf("decode response: %w", err)}
 	}
 	if len(payload.Choices) == 0 || strings.TrimSpace(payload.Choices[0].Message.Content) == "" {
-		return "", fmt.Errorf("Groq response has no content")
+		return "", &malformedGroqResponseError{cause: fmt.Errorf("response has no content")}
 	}
 	return payload.Choices[0].Message.Content, nil
 }

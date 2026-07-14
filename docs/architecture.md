@@ -37,8 +37,10 @@ replaces that state. A successful interview follows this sequence:
 start -> main 1 -> follow-up 1 -> ... -> main 5 -> follow-up 5 -> report
 ```
 
-Failed Groq calls do not append history or advance the current question. The API
-key selected at startup remains only in this in-memory state.
+Failed Groq calls do not append history or advance the current question. Invalid
+structured output is retried once; authentication, permission, and rate-limit
+failures are not retried. The API key selected at startup remains only in this
+in-memory state.
 
 This design intentionally supports one local user. Version 1.0 should introduce
 opaque session identifiers and isolated state before supporting concurrent users.
@@ -54,6 +56,10 @@ are injectable through `app.Config`, allowing deterministic local tests.
 - Invalid client data returns JSON with HTTP 400.
 - Invalid state transitions return JSON with HTTP 409.
 - Unsupported methods return JSON with HTTP 405 and an `Allow` header.
-- Upstream failures or malformed AI data return JSON with HTTP 502.
+- Invalid Groq credentials return HTTP 401, model permission failures return 403,
+  and Groq rate limits return 429.
+- Groq availability failures return HTTP 503; rejected upstream requests and
+  malformed AI data return HTTP 502.
+- Server diagnostics contain safe error categories and statuses, never keys,
+  interview answers, or complete AI output.
 - Startup configuration and question-file failures stop the server with a log.
-

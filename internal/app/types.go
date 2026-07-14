@@ -1,7 +1,10 @@
 // Package app implements the interview simulator HTTP application.
 package app
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 // Question is a single interview question.
 type Question struct {
@@ -38,6 +41,7 @@ type Config struct {
 	HTTPClient  *http.Client
 	GroqURL     string
 	Model       string
+	Logger      *log.Logger
 }
 
 type interviewFeedback struct {

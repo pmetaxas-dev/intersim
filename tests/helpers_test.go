@@ -2,6 +2,8 @@ package tests
 
 import (
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -33,6 +35,7 @@ func newTestApp(t *testing.T, fallbackKey string, groqHandler http.HandlerFunc) 
 		FallbackKey: fallbackKey,
 		HTTPClient:  server.Client(),
 		GroqURL:     server.URL,
+		Logger:      log.New(io.Discard, "", 0),
 	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

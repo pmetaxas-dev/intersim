@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -27,6 +28,7 @@ type App struct {
 	httpClient  *http.Client
 	groqURL     string
 	model       string
+	logger      *log.Logger
 	random      *rand.Rand
 	state       *interviewState
 }
@@ -48,6 +50,10 @@ func New(config Config) (*App, error) {
 	if model == "" {
 		model = defaultModel
 	}
+	logger := config.Logger
+	if logger == nil {
+		logger = log.Default()
+	}
 
 	return &App{
 		questions:   append([]Question(nil), config.Questions...),
@@ -55,6 +61,7 @@ func New(config Config) (*App, error) {
 		httpClient:  client,
 		groqURL:     groqURL,
 		model:       model,
+		logger:      logger,
 		random:      rand.New(rand.NewSource(time.Now().UnixNano())),
 	}, nil
 }
@@ -152,7 +159,9 @@ func (a *App) answerHandler(w http.ResponseWriter, r *http.Request) {
 
 	evaluation, err := a.evaluateAnswer(r.Context(), a.state.apiKey, contextLabel, currentQuestion.Question, strings.TrimSpace(payload.Answer))
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "AI service returned an invalid response")
+		a.logger.Printf("answer evaluation failed: %v", err)
+		status, message := aiClientError(err, "evaluation")
+		writeError(w, status, message)
 		return
 	}
 	a.state.history = append(a.state.history, interviewFeedback{
@@ -201,7 +210,9 @@ func (a *App) reportHandler(w http.ResponseWriter, r *http.Request) {
 
 	report, err := a.generateReport(r.Context(), a.state.apiKey, a.state.history)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "AI service returned an invalid report")
+		a.logger.Printf("report generation failed: %v", err)
+		status, message := aiClientError(err, "report")
+		writeError(w, status, message)
 		return
 	}
 	writeJSON(w, http.StatusOK, report)
@@ -250,4 +261,29 @@ func noStore(next http.Handler) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func aiClientError(err error, operation string) (int, string) {
+	var upstream *groqHTTPError
+	if !errors.As(err, &upstream) {
+		var transport *groqTransportError
+		if errors.As(err, &transport) {
+			return http.StatusServiceUnavailable, "Groq is temporarily unavailable. Please retry shortly."
+		}
+		return http.StatusBadGateway, "AI service returned an unexpected response. Please retry."
+	}
+
+	switch upstream.statusCode {
+	case http.StatusUnauthorized:
+		return http.StatusUnauthorized, "Groq API key was rejected. Reload and start with a valid key."
+	case http.StatusForbidden:
+		return http.StatusForbidden, "Groq denied permission to use the selected model."
+	case http.StatusTooManyRequests:
+		return http.StatusTooManyRequests, "Groq rate limit reached. Please retry shortly."
+	default:
+		if upstream.statusCode >= http.StatusInternalServerError {
+			return http.StatusServiceUnavailable, "Groq is temporarily unavailable. Please retry shortly."
+		}
+		return http.StatusBadGateway, fmt.Sprintf("Groq rejected the %s request.", operation)
+	}
 }

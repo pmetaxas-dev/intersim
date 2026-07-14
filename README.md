@@ -1,6 +1,6 @@
 # Intersim
 
-![Version](https://img.shields.io/badge/version-v0.9.0-orange) ![Go](https://img.shields.io/badge/Go-1.25.4-00ADD8?logo=go&logoColor=white) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-88.7%25-brightgreen) ![License](https://img.shields.io/badge/license-Zone01%20Educational-6A9E32)
+![Version](https://img.shields.io/badge/version-v0.9.0-orange) ![Go](https://img.shields.io/badge/Go-1.25.4-00ADD8?logo=go&logoColor=white) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-90.3%25-brightgreen) ![License](https://img.shields.io/badge/license-Zone01%20Educational-6A9E32)
 
 Intersim is a local AI-assisted job interview simulator for junior developers. It
 selects five questions, asks one AI-generated follow-up after each answer, scores
@@ -95,6 +95,13 @@ go build ./...
 
 Groq behavior is tested with local HTTP test servers, so tests do not use a real
 API key or make external network calls.
+
+## Troubleshooting
+
+The application distinguishes rejected API keys, model permissions, rate limits,
+temporary Groq availability, and malformed AI output. A malformed structured
+response is retried once automatically without advancing the interview. If an API
+key is rejected, reload the page and start a new interview with a valid key.
 
 ## Project layout
 

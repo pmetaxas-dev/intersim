@@ -59,10 +59,13 @@ These items may be considered for version 1.0.
 1. `POST /api/answer` requires the current `questionId` and a non-empty answer.
 2. Requests made before startup, after completion, or for another question fail.
 3. Groq returns a 0-100 score, positive feedback, improvement feedback, and a
-   follow-up for main questions.
-4. Invalid or unsuccessful Groq responses return HTTP 502 and do not advance the
-   interview.
-5. Main and follow-up questions alternate until ten successful evaluations.
+   follow-up for main questions. Empty feedback fields receive neutral display
+   text rather than invalidating an otherwise usable evaluation.
+4. Malformed structured output or a missing required follow-up is retried once.
+5. Failed evaluations do not advance the interview. Authentication, permission,
+   rate-limit, unavailable-service, and malformed-response failures return
+   distinct safe errors.
+6. Main and follow-up questions alternate until ten successful evaluations.
 
 ### Final report
 
@@ -76,6 +79,7 @@ These items may be considered for version 1.0.
 - API responses must use `Cache-Control: no-store`.
 - Untrusted AI text must be rendered with text nodes, not HTML injection.
 - Request and upstream response bodies must have bounded read sizes.
+- Diagnostic logs must not contain API keys, interview answers, or full AI output.
 - Tests must use mock HTTP servers and placeholder keys only.
 
 ## Acceptance criteria
@@ -85,4 +89,3 @@ These items may be considered for version 1.0.
 - Five main questions and five follow-ups produce the final report.
 - Invalid local and upstream inputs return controlled JSON errors without panic.
 - `go test ./...`, `go vet ./...`, and `go build ./...` pass.
-
