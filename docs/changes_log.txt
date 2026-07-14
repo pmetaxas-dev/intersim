@@ -12,3 +12,10 @@ were: gofmt completed; go test ./..., go vet ./..., go build ./..., JavaScript
 syntax validation, and git diff --check passed; backend statement coverage was
 88.7%. Race detection could not run because CGO is disabled and no C compiler is
 installed in the environment.
+
+Date: 2026-07-14
+Time: 23:04:58 +03:00
+My Prompt: Add README icons matching the supplied badge style.
+Agent Action: Added accurate Shields.io badges for version 0.8.0, Go 1.25.4,
+passing tests, 88.7% backend coverage, and the Zone01 Educational License. Verified
+the Markdown change with git diff --check.

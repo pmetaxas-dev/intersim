@@ -1,5 +1,7 @@
 # Intersim
 
+![Version](https://img.shields.io/badge/version-v0.9.0-orange) ![Go](https://img.shields.io/badge/Go-1.25.4-00ADD8?logo=go&logoColor=white) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-88.7%25-brightgreen) ![License](https://img.shields.io/badge/license-Zone01%20Educational-6A9E32)
+
 Intersim is a local AI-assisted job interview simulator for junior developers. It
 selects five questions, asks one AI-generated follow-up after each answer, scores
 the ten responses, and produces a final study report.
