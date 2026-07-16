@@ -12,7 +12,7 @@
 - [ ] Add a browser file requester for a validated custom `.json` question pool.
 - [ ] Replace the single global interview with isolated per-user sessions before
   supporting simultaneous users.
-- [ ] Make the Interview Universal, bu ommiting the questions.json (maybe keep it for fallback)
+- [ ] Make the Interview Universal, but ommiting the questions.json (maybe keep it for fallback)
       At the start of the session, there will be a field with an interview description,
       so Groq will be creating 5 questions.
 - [ ] There will be 3 Difficulty Levels.
