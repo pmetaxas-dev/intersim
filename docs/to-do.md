@@ -21,3 +21,7 @@
 
 - [ ] Save every report in a file growth_reports.md.
 - [ ] Use growth_reports.md to draw a chart of growth.
+
+## Update 2.0
+
+- [ ] Enable Memory using local files or maybe cloud SQL Database.
