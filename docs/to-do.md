@@ -16,3 +16,8 @@
       At the start of the session, there will be a field with an interview description,
       so Groq will be creating 5 questions.
 - [ ] There will be 3 Difficulty Levels.
+
+## Update 1.5
+
+- [ ] Save every report in a file growth_reports.md.
+- [ ] Use growth_reports.md to draw a chart of growth.
