@@ -25,3 +25,6 @@
 ## Update 2.0
 
 - [ ] Enable Memory using local files or maybe cloud SQL Database.
+- [ ] As the memory becomes less entropic towards your knowloedge and growth, there
+      will be a prompt for proposing a book to read, that addresses as many of the
+      negatives" as possible.
