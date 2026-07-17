@@ -9,13 +9,11 @@
 
 ## Later update (1.0)
 
-- [ ] Add a browser file requester for a validated custom `.json` question pool.
-- [ ] Replace the single global interview with isolated per-user sessions before
-  supporting simultaneous users.
 - [ ] Make the Interview Universal, but ommiting the questions.json (maybe keep it for fallback)
       At the start of the session, there will be a field with an interview description,
       so Groq will be creating 5 questions.
 - [ ] There will be 3 Difficulty Levels.
+- [ ] Ommit the fallback API KEy completely, handle only at front-end. Showing message "Please provide a valid API Key"
 
 ## Update 1.5
 
@@ -27,4 +25,4 @@
 - [ ] Enable Memory using local files or maybe cloud SQL Database.
 - [ ] As the memory becomes less entropic towards your knowloedge and growth, there
       will be a prompt for proposing a book to read, that addresses as many of the
-      negatives" as possible.
+      "negatives" as possible.
