@@ -12,8 +12,11 @@
 - [ ] Make the Interview Universal, but ommiting the questions.json (maybe keep it for fallback)
       At the start of the session, there will be a field with an interview description,
       so Groq will be creating 5 questions.
-- [ ] There will be 3 Difficulty Levels.
+- [ ] There will be 3 Difficulty Levels. (Easy pre-selected).
 - [ ] Ommit the fallback API KEy completely, handle only at front-end. Showing message "Please provide a valid API Key"
+- [ ] Add a title at the top.
+- [ ] Add a shutdown button tho the front-end.
+- [ ] Add the Zone01 logo.
 
 ## Update 1.5
 
