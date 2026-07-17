@@ -26,6 +26,7 @@ func LoadQuestions(path string) ([]Question, error) {
 	return questions, nil
 }
 
+// validateQuestions checks that questions are complete and uniquely identified.
 func validateQuestions(questions []Question) error {
 	if len(questions) < interviewQuestionCount {
 		return fmt.Errorf("question pool must contain at least %d questions", interviewQuestionCount)

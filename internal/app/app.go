@@ -76,6 +76,7 @@ func (a *App) Handler() http.Handler {
 	return noStore(mux)
 }
 
+// configHandler returns the API configuration for the frontend.
 func (a *App) configHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
@@ -83,6 +84,7 @@ func (a *App) configHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"requiresApiKey": a.fallbackKey == ""})
 }
 
+// startInterviewHandler initializes a new interview session.
 func (a *App) startInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
@@ -121,6 +123,7 @@ func (a *App) startInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, firstQuestion)
 }
 
+// answerHandler processes the user's answer and returns the next interview step.
 func (a *App) answerHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
@@ -197,6 +200,7 @@ func (a *App) answerHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// reportHandler returns the final interview report once the session is complete.
 func (a *App) reportHandler(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
@@ -218,6 +222,7 @@ func (a *App) reportHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, report)
 }
 
+// requireMethod enforces the expected HTTP method for a request.
 func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	if r.Method == method {
 		return true
@@ -227,6 +232,7 @@ func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	return false
 }
 
+// decodeJSONBody parses and validates a single JSON request body.
 func decodeJSONBody(r *http.Request, destination any) error {
 	data, err := io.ReadAll(io.LimitReader(r.Body, maxRequestBody+1))
 	if err != nil {
@@ -246,16 +252,19 @@ func decodeJSONBody(r *http.Request, destination any) error {
 	return nil
 }
 
+// writeError sends a JSON error response with the provided status.
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
 }
 
+// writeJSON serializes the response value as JSON and writes it.
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+// noStore wraps a handler to disable client-side caching.
 func noStore(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
@@ -263,6 +272,7 @@ func noStore(next http.Handler) http.Handler {
 	})
 }
 
+// aiClientError maps Groq errors to an HTTP status code and user-friendly message.
 func aiClientError(err error, operation string) (int, string) {
 	var upstream *groqHTTPError
 	if !errors.As(err, &upstream) {

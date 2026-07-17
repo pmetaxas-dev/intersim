@@ -19,6 +19,7 @@ type groqHTTPError struct {
 	statusCode int
 }
 
+// Error returns the HTTP status code message for a Groq response.
 func (e *groqHTTPError) Error() string {
 	return fmt.Sprintf("Groq returned HTTP %d", e.statusCode)
 }
@@ -27,10 +28,12 @@ type groqTransportError struct {
 	cause error
 }
 
+// Error returns the transport error message for Groq requests.
 func (e *groqTransportError) Error() string {
 	return fmt.Sprintf("call Groq: %v", e.cause)
 }
 
+// Unwrap returns the underlying transport error.
 func (e *groqTransportError) Unwrap() error {
 	return e.cause
 }
@@ -39,14 +42,17 @@ type malformedGroqResponseError struct {
 	cause error
 }
 
+// Error returns the malformed response error message from Groq.
 func (e *malformedGroqResponseError) Error() string {
 	return fmt.Sprintf("malformed Groq response: %v", e.cause)
 }
 
+// Unwrap returns the underlying malformed response cause.
 func (e *malformedGroqResponseError) Unwrap() error {
 	return e.cause
 }
 
+// evaluateAnswer uses Groq to score an answer and suggest follow-up questions.
 func (a *App) evaluateAnswer(ctx context.Context, apiKey, contextLabel, question, answer string) (AIResponse, error) {
 	const systemPrompt = `You are an expert technical interviewer evaluating a Junior Developer.
 1. Score the answer from 0 to 100. Correct, professional, accurate answers should receive 90-100.
@@ -76,6 +82,7 @@ func (a *App) evaluateAnswer(ctx context.Context, apiKey, contextLabel, question
 	return AIResponse{}, fmt.Errorf("evaluation invalid after %d attempts: %w", structuredResponseAttempts, lastErr)
 }
 
+// parseEvaluation validates the AI evaluation JSON payload.
 func parseEvaluation(content, contextLabel string) (AIResponse, error) {
 	var result AIResponse
 	if err := json.Unmarshal([]byte(content), &result); err != nil {
@@ -99,6 +106,7 @@ func parseEvaluation(content, contextLabel string) (AIResponse, error) {
 	return result, nil
 }
 
+// generateReport asks Groq to produce a final interview report from history.
 func (a *App) generateReport(ctx context.Context, apiKey string, history []interviewFeedback) (FinalReport, error) {
 	data, err := json.Marshal(history)
 	if err != nil {
@@ -126,6 +134,7 @@ func (a *App) generateReport(ctx context.Context, apiKey string, history []inter
 	return FinalReport{}, fmt.Errorf("report invalid after %d attempts: %w", structuredResponseAttempts, lastErr)
 }
 
+// parseReport validates the AI-generated final report JSON.
 func parseReport(content string) (FinalReport, error) {
 	var report FinalReport
 	if err := json.Unmarshal([]byte(content), &report); err != nil {
@@ -140,6 +149,7 @@ func parseReport(content string) (FinalReport, error) {
 	return report, nil
 }
 
+// complete sends a request to Groq and returns its text response.
 func (a *App) complete(ctx context.Context, apiKey, systemPrompt, userPrompt string, temperature float64) (string, error) {
 	body, err := json.Marshal(groqRequest{
 		Model: a.model,

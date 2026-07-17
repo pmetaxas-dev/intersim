@@ -56,4 +56,9 @@ Agent Action: Replaced /home/student/intersim/license.md with the standard MIT
 license text (Copyright (c) 2026 Zone01 Bocals and Founders). Saved the file and
 verified the update in the workspace.
 
+Date: 2026-07-17
+Time: 15:30:00 +00:00
+My Prompt: add one-line comments to every function that does not have comment (in /internal)
+Agent Action: Added one-line comments to all uncommented functions in internal/app, including HTTP handlers, JSON helpers, Groq error helpers, and question validation. Formatted modified files with gofmt.
+
 ```
